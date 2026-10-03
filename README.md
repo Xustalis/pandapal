@@ -1,10 +1,10 @@
 # PandaPal - 对对对你说的都队
 
-PandaButler（熊猫管家）—— 孩子的终身陪伴成长管家
+PandaPal（熊猫管家）—— 孩子的终身陪伴成长管家
 
 > "从小用到大，最懂你的那个人"
 
-**在线 Demo：<https://xustalis.site/pandapal/>**（评委可直接访问；演示账号见「快速开始」）｜ 本仓库全部代码为比赛期间原创，完整提交历史见 Git log
+**在线 Demo：[https://xustalis.site/pandapal/](https://xustalis.site/pandapal/)**（评委可直接访问；演示账号见「快速开始」）｜ 本仓库全部代码为比赛期间原创，完整提交历史见 Git log
 
 ## 一、项目简介
 
@@ -43,9 +43,11 @@ PandaButler（熊猫管家）—— 孩子的终身陪伴成长管家
 ## 四、快速开始
 
 ### 环境要求
+
 - Python 3.10+
 
 ### 安装步骤
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements-dev.txt   # 仅运行服务可用 requirements.txt
@@ -53,6 +55,7 @@ cp .env.example .env   # 然后填入你的 LLM_API_KEY 等
 ```
 
 ### 运行方式
+
 ```bash
 .venv/bin/python -m server.main          # 或 .venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000
 # 打开 http://localhost:8000
@@ -62,17 +65,17 @@ cp .env.example .env   # 然后填入你的 LLM_API_KEY 等
 
 ### 登录与权限（用户名 + 密码）
 
-| 账号 | 密码 | 角色 | 能用什么 |
-|---|---|---|---|
-| `小豆` | `panda123` | 孩子 | 聊天 / 悄悄话 / 梦想 / 星球 / 事务 / 记忆本 / 成长（自己的完整档案） |
-| `豆豆妈` | `mama123` | 家长 | 收件箱确认、传话筒 + 孩子档案的只读视图（悄悄话服务端强制过滤） |
-| `admin` | `admin123`（登录页不再提供一键入口，手动输入） | 评委 | 全部能力 + `/api/logs` 调用留痕 + 孩子/家长视角切换 |
+| 账号     | 密码                                           | 角色 | 能用什么                                                             |
+| -------- | ---------------------------------------------- | ---- | -------------------------------------------------------------------- |
+| `小豆`   | `panda123`                                     | 孩子 | 聊天 / 悄悄话 / 梦想 / 星球 / 事务 / 记忆本 / 成长（自己的完整档案） |
+| `豆豆妈` | `mama123`                                      | 家长 | 收件箱确认、传话筒 + 孩子档案的只读视图（悄悄话服务端强制过滤）      |
+| `admin`  | `admin123`（登录页不再提供一键入口，手动输入） | 评委 | 全部能力 +`/api/logs` 调用留痕 + 孩子/家长视角切换                   |
 
 输入未注册的用户名会自动创建「孩子」账号并绑定同名空白档案。登录卡还有**注册**（选孩子/家长身份，家长需填孩子登录名绑定档案）与**忘记密码**（答对注册时设的密保问题即可重置，旧 token 全部作废）两个面板；孩子/家长演示账号预置密保「熊猫最爱吃什么？/ 竹子」，开箱可演找回流程（admin 不挂密保、也不允许走密保找回；用环境变量改过口令的种子账号同样不挂公开密保）。注册家长账号除了孩子的登录名，还要输入**孩子账号的密码**作为绑定凭证。所有调用大模型的接口共用一份额度（每账号 + 每 IP，5 分钟窗口），问候/晨报超额时退回本地兜底文案；未知名字自动注册按 IP 每小时限 10 个，新号密码至少 4 位。种子账号口令可用 `PANDA_CHILD/PARENT/ADMIN_PASSWORD` 覆盖（仅首次生成 users.json 时生效，线上部署务必改掉）；`data/aliases.seed.json` 可配登录名别名（如 `xiaodou`→`小豆`），别名只解析到已存在的账号、照常校验密码，绝不会绕过密码或蹭到别人的档案。除 `/api/health`、`/api/auth/*` 与静态页外，全部接口要求 `Authorization: Bearer <token>`；非 admin 只能访问自己绑定的孩子档案，越权一律 403；家长账号是孩子档案的只读视图（收件箱确认与传话筒除外）。密码与密保答案 PBKDF2 加盐存 `data/users.json`，token 仅以 SHA-256 哈希落 `data/tokens.json`（均不入库），默认 7 天有效、重启不掉登录。
 
 ### 部署说明（线上形态）
 
-线上演示跑在自有云服务器上：**<https://xustalis.site/pandapal/>**
+线上演示跑在自有云服务器上：**[https://xustalis.site/pandapal/](https://xustalis.site/pandapal/)**
 
 - 形态：uvicorn 单进程绑 `127.0.0.1:8017`（systemd 单元 `pandapal.service`），nginx 443 把 `/pandapal/` 反代过去并剥离前缀；前端静态资源由 FastAPI 挂载在 `/static`
 - 一键部署：`./deploy.sh` —— rsync 同步代码 → 服务端安装依赖 → 重启服务 → `curl /api/health` 健康检查
@@ -84,72 +87,72 @@ cp .env.example .env   # 然后填入你的 LLM_API_KEY 等
 
 ### 对话与 Agent 执行
 
-| 功能 | 模块 |
-|---|---|
-| 记忆驱动开场问候 · 晨间巡检（事务 + 临近截止 + 确定性"反复提起"建议） | `GET /api/greeting` · `GET /api/briefing` |
-| 闲聊通道（人设 + 活跃记忆注入 + 历史尾部 → 流式回复） | `server/main.py` `_chat_stream` |
-| 意图分类（chat/explain/plan/relay/affair_update + 情绪）· FastTriage 免 LLM 快速路 · 分类结果缓存（同一句话 + 同一份简报 300s 内不重问） | `server/router.py` |
-| 讲懂（explain）：用孩子自己的经历打比方讲知识，类比素材来自记忆图谱 | `server/prompts.py` `EXPLAIN_RULE` |
-| 任务拆解：LLM 输出 JSON DAG，校验去环重试 | `server/planner.py` |
-| 按依赖并行执行 + SSE 实时状态 | `server/executor.py` |
-| 结构化卡片合成 + 出卡前判官自检（"实质回应孩子了吗"，不过带意见重出一次，原卡保底） | `server/synth.py` + `server/main.py` `_supervise_card` |
-| 先问清楚再动手：需求缺关键信息 → planner 输出 `{"clarify": …}` 反问；原请求挂 `pending_clarify`，下一句合并重走完整管线 | `server/planner.py` + `server/main.py` |
-| 代办文书（"帮我写份自我介绍/发言稿"→LLM 真写全文→文稿卡+落盘挂回事务） | `server/actions.py` `draft` |
-| 长文稿管线（论文/报告/作文）：提纲定结构 → 各节并行生成 → 拼 markdown（单节失败如实标缺） | `server/actions.py` `_write_paper` + `prompts.py` `PAPER_*` |
-| 交付物落盘：draft 同时落成 `files/` 里的 .docx 真文件（失败退 .md），卡片一键下载 | `_draft_to_file` + `GET /api/files/{id}/content?download=1` |
-| 文稿修订环："把结尾改改/帮我重写"对着 48h 内的稿子就地改写（不重走规划管道），同一 draft_id 更新 | `server/main.py` 修订锚点 + `revise_draft` |
-| 闲聊直答的工具轮：启发式命中 → 调度器挑工具 → 多工具并行分发 → 结果注入 → 流式回复 | `server/main.py` `_tool_round` + `prompts.py` `TOOL_PICK` |
-| 工具脚手架（声明式注册表，@tool 注册即接入）：看时间 / 本地赛事库 / 交通参考 / wttr.in 天气 / 联网搜索 / 打开网页 | `server/tools.py` |
-| 快捷话题 chips：按孩子此刻的事务/截止/兴趣/时段动态生成，不是全员一套死文案 | `server/suggest.py` |
+| 功能                                                                                                                                     | 模块                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 记忆驱动开场问候 · 晨间巡检（事务 + 临近截止 + 确定性"反复提起"建议）                                                                    | `GET /api/greeting` · `GET /api/briefing`                   |
+| 闲聊通道（人设 + 活跃记忆注入 + 历史尾部 → 流式回复）                                                                                    | `server/main.py` `_chat_stream`                             |
+| 意图分类（chat/explain/plan/relay/affair_update + 情绪）· FastTriage 免 LLM 快速路 · 分类结果缓存（同一句话 + 同一份简报 300s 内不重问） | `server/router.py`                                          |
+| 讲懂（explain）：用孩子自己的经历打比方讲知识，类比素材来自记忆图谱                                                                      | `server/prompts.py` `EXPLAIN_RULE`                          |
+| 任务拆解：LLM 输出 JSON DAG，校验去环重试                                                                                                | `server/planner.py`                                         |
+| 按依赖并行执行 + SSE 实时状态                                                                                                            | `server/executor.py`                                        |
+| 结构化卡片合成 + 出卡前判官自检（"实质回应孩子了吗"，不过带意见重出一次，原卡保底）                                                      | `server/synth.py` + `server/main.py` `_supervise_card`      |
+| 先问清楚再动手：需求缺关键信息 → planner 输出`{"clarify": …}` 反问；原请求挂 `pending_clarify`，下一句合并重走完整管线                   | `server/planner.py` + `server/main.py`                      |
+| 代办文书（"帮我写份自我介绍/发言稿"→LLM 真写全文→文稿卡+落盘挂回事务）                                                                   | `server/actions.py` `draft`                                 |
+| 长文稿管线（论文/报告/作文）：提纲定结构 → 各节并行生成 → 拼 markdown（单节失败如实标缺）                                                | `server/actions.py` `_write_paper` + `prompts.py` `PAPER_*` |
+| 交付物落盘：draft 同时落成`files/` 里的 .docx 真文件（失败退 .md），卡片一键下载                                                         | `_draft_to_file` + `GET /api/files/{id}/content?download=1` |
+| 文稿修订环："把结尾改改/帮我重写"对着 48h 内的稿子就地改写（不重走规划管道），同一 draft_id 更新                                         | `server/main.py` 修订锚点 + `revise_draft`                  |
+| 闲聊直答的工具轮：启发式命中 → 调度器挑工具 → 多工具并行分发 → 结果注入 → 流式回复                                                       | `server/main.py` `_tool_round` + `prompts.py` `TOOL_PICK`   |
+| 工具脚手架（声明式注册表，@tool 注册即接入）：看时间 / 本地赛事库 / 交通参考 / wttr.in 天气 / 联网搜索 / 打开网页                        | `server/tools.py`                                           |
+| 快捷话题 chips：按孩子此刻的事务/截止/兴趣/时段动态生成，不是全员一套死文案                                                              | `server/suggest.py`                                         |
 
 ### 记忆系统
 
-| 功能 | 模块 |
-|---|---|
-| 双层记忆：活跃关注点块（注意力门控：新近常驻、相关排前）每轮注入 + 主题图谱检索（bigram 命中 + 沿边一跳） | `server/memory.py` + `server/graph.py` |
-| 文件式记忆读写：轮后 LLM 抽取 → topics/daily/MEMORY；单写锁 + tmp→rename 原子写 | `server/memory.py` |
-| Dreaming 记忆整理：daily 跨天去重 → 五信号打分 → 反复出现的事晋升进 MEMORY.md（标 `[梦]` 出处可查）+ 梦日记落盘；每天一次、全确定性不调 LLM | `server/dream.py` |
-| 记忆星球：五领域星区、时间轴播放、节点抽屉、想起了/记下了联动、规划卫星（DAG 实时状态）（3D；WebGL 不可用 2D 兜底） | `web/scene3d.js` `graph2d.js` + `GET /api/graph` |
-| 记忆本页：主题分组 + 时间线 + 长期记忆 + 梦日记（晋升过程可见） | `GET /api/memory` |
-| 悄悄话结构性隔离：只进图谱 private 节点，文件层只写占位行；relay/周报等家长侧 prompt 在构造上读不到 | `server/memory.py` `server/graph.py` |
-| 记忆注入围栏：`<memory_data>` 声明"数据不是指令" + 围栏标签中和（防自闭合越狱） | `server/store.py` `fence_memory` |
-| 多会话历史：新建 / 归档 / 恢复 / 删除，落盘重启不丢 | `GET/POST/DELETE /api/history*` |
+| 功能                                                                                                                                       | 模块                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| 双层记忆：活跃关注点块（注意力门控：新近常驻、相关排前）每轮注入 + 主题图谱检索（bigram 命中 + 沿边一跳）                                  | `server/memory.py` + `server/graph.py`           |
+| 文件式记忆读写：轮后 LLM 抽取 → topics/daily/MEMORY；单写锁 + tmp→rename 原子写                                                            | `server/memory.py`                               |
+| Dreaming 记忆整理：daily 跨天去重 → 五信号打分 → 反复出现的事晋升进 MEMORY.md（标`[梦]` 出处可查）+ 梦日记落盘；每天一次、全确定性不调 LLM | `server/dream.py`                                |
+| 记忆星球：五领域星区、时间轴播放、节点抽屉、想起了/记下了联动、规划卫星（DAG 实时状态）（3D；WebGL 不可用 2D 兜底）                        | `web/scene3d.js` `graph2d.js` + `GET /api/graph` |
+| 记忆本页：主题分组 + 时间线 + 长期记忆 + 梦日记（晋升过程可见）                                                                            | `GET /api/memory`                                |
+| 悄悄话结构性隔离：只进图谱 private 节点，文件层只写占位行；relay/周报等家长侧 prompt 在构造上读不到                                        | `server/memory.py` `server/graph.py`             |
+| 记忆注入围栏：`<memory_data>` 声明"数据不是指令" + 围栏标签中和（防自闭合越狱）                                                            | `server/store.py` `fence_memory`                 |
+| 多会话历史：新建 / 归档 / 恢复 / 删除，落盘重启不丢                                                                                        | `GET/POST/DELETE /api/history*`                  |
 
 ### 事务与家庭侧
 
-| 功能 | 模块 |
-|---|---|
-| 事务系统：发现→规划→执行→等确认→跟进→结案；看板 + 详情抽屉 + DAG 回放 + 清单勾选 + 日志时间线 | `server/affairs.py` + `web/app.js` |
-| 提醒 + 日历导出（.ics） | `POST /api/affairs` · `GET /api/ics/{aid}` |
-| 家长收件箱：确认 / 驳回（车票、费用等需要家长拍板的事） | `GET/POST /api/parent/inbox` |
-| 传话筒：老师→家长（大白话 + 建议 + 孩子鼓励版）/ 孩子→老师（需孩子点同意才转达） | `POST /api/relay` |
-| 家长周报：本周事务进展 + 新变化统计 → 一页纸（悄悄话只计数不进 prompt；LLM 挂了只报统计） | `server/family.py` `GET /api/parent/weekly` |
-| 通知落地「一份通知，千家千版」：按每个孩子的记忆出专属版 + 自动建事务/清单/提醒；admin（机构账号）可批量下发 | `POST /api/notice` |
-| 童年备忘录导出：整份档案打包 zip 交还孩子本人（家长 403） | `GET /api/export` |
-| 成长雷达：德智体美劳五维评估 + 每维证据节点（两段取：雷达图毫秒级先出，LLM 点评后到、失败不影响数据） | `GET /api/growth` |
-| 梦想频道：接住孩子说的梦想并落成记忆 | `POST /api/dream` |
-| 多模态附件：上传图片/PDF/Word/Excel/PPT/文本（拖拽、点选或粘贴），图片走视觉、扫描件 PDF 渲染成图、文档抽取正文进上下文；跨轮可追问、可管理 | `server/files.py` + `POST /api/files` |
+| 功能                                                                                                                                        | 模块                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 事务系统：发现→规划→执行→等确认→跟进→结案；看板 + 详情抽屉 + DAG 回放 + 清单勾选 + 日志时间线                                               | `server/affairs.py` + `web/app.js`          |
+| 提醒 + 日历导出（.ics）                                                                                                                     | `POST /api/affairs` · `GET /api/ics/{aid}`  |
+| 家长收件箱：确认 / 驳回（车票、费用等需要家长拍板的事）                                                                                     | `GET/POST /api/parent/inbox`                |
+| 传话筒：老师→家长（大白话 + 建议 + 孩子鼓励版）/ 孩子→老师（需孩子点同意才转达）                                                            | `POST /api/relay`                           |
+| 家长周报：本周事务进展 + 新变化统计 → 一页纸（悄悄话只计数不进 prompt；LLM 挂了只报统计）                                                   | `server/family.py` `GET /api/parent/weekly` |
+| 通知落地「一份通知，千家千版」：按每个孩子的记忆出专属版 + 自动建事务/清单/提醒；admin（机构账号）可批量下发                                | `POST /api/notice`                          |
+| 童年备忘录导出：整份档案打包 zip 交还孩子本人（家长 403）                                                                                   | `GET /api/export`                           |
+| 成长雷达：德智体美劳五维评估 + 每维证据节点（两段取：雷达图毫秒级先出，LLM 点评后到、失败不影响数据）                                       | `GET /api/growth`                           |
+| 梦想频道：接住孩子说的梦想并落成记忆                                                                                                        | `POST /api/dream`                           |
+| 多模态附件：上传图片/PDF/Word/Excel/PPT/文本（拖拽、点选或粘贴），图片走视觉、扫描件 PDF 渲染成图、文档抽取正文进上下文；跨轮可追问、可管理 | `server/files.py` + `POST /api/files`       |
 
 ### 界面与形态
 
-| 功能 | 模块 |
-|---|---|
-| 3D「竹林小屋」+ 低多边形熊猫管家（呼吸/眨眼/写字/开心等状态动画），全部用基础几何体拼装、无外部素材版权问题 | `web/scene3d.js` `panda3d.js` |
-| 降级：WebGL 不可用或场景初始化失败 → 自动切 2D 图谱与 SVG 熊猫，数据与交互不变 | `web/graph2d.js` `panda.js` |
-| 家长视角：白天配色、悄悄话节点整体隐藏、收件箱/传话筒/周报 | `web/app.js` |
-| PWA：可添加到主屏幕；断网时记忆本/事务/星球用缓存撑起，AI 端点不缓存（断网如实停答） | `web/sw.js` + `web/manifest.webmanifest` |
-| 语音链路：管家朗读（口播稿先洗成口语、限长收尾）+ 音色档案 voice.json（可对话调整）+ 语音识别双路径（浏览器优先、服务端 ASR 兜底） | `server/tts.py` `stt.py` `voice.py` |
-| admin 后台：调用留痕校验 / API 配置（改完即生效）/ 用户管理 / 档案内容 / 数据文件 | `server/admin.py` |
-| 自托管字体 + 双栈排版（UI 无衬线、管家的话衬线） | `web/fonts/` + `style.css` |
+| 功能                                                                                                                               | 模块                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 3D「竹林小屋」+ 低多边形熊猫管家（呼吸/眨眼/写字/开心等状态动画），全部用基础几何体拼装、无外部素材版权问题                        | `web/scene3d.js` `panda3d.js`            |
+| 降级：WebGL 不可用或场景初始化失败 → 自动切 2D 图谱与 SVG 熊猫，数据与交互不变                                                     | `web/graph2d.js` `panda.js`              |
+| 家长视角：白天配色、悄悄话节点整体隐藏、收件箱/传话筒/周报                                                                         | `web/app.js`                             |
+| PWA：可添加到主屏幕；断网时记忆本/事务/星球用缓存撑起，AI 端点不缓存（断网如实停答）                                               | `web/sw.js` + `web/manifest.webmanifest` |
+| 语音链路：管家朗读（口播稿先洗成口语、限长收尾）+ 音色档案 voice.json（可对话调整）+ 语音识别双路径（浏览器优先、服务端 ASR 兜底） | `server/tts.py` `stt.py` `voice.py`      |
+| admin 后台：调用留痕校验 / API 配置（改完即生效）/ 用户管理 / 档案内容 / 数据文件                                                  | `server/admin.py`                        |
+| 自托管字体 + 双栈排版（UI 无衬线、管家的话衬线）                                                                                   | `web/fonts/` + `style.css`               |
 
 ### 可靠性与验真
 
-| 功能 | 模块 |
-|---|---|
-| LLM 三层可靠性：错误分级退避重试（429 换 Key、5xx/断网指数退避）、双口径熔断（Key 级 / 端点级分开记账）、异构兜底端点（可切另一家服务商）；流式只在未吐 token 前重试防回复重复 | `server/llm.py` |
-| 调用留痕防篡改：`llm_calls.jsonl` 每行带前一行 sha256 哈希链，`GET /api/logs/verify` 逐行校验改/删/换序 | `server/llm.py` `verify_chain` |
-| 鉴权与权限矩阵：PBKDF2 加盐、token 只存哈希、非 admin 越权 403、限频 | `server/auth.py` |
-| **降级不降真**：DAG 规划失败 → 单 LLM 直出卡片（只跳拆解展示，绝不跳生成）；节点失败 → 标记后继续；工具失败/没搜到 → 如实告诉孩子"没查到"，不编造 | 全链路 |
+| 功能                                                                                                                                                                           | 模块                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| LLM 三层可靠性：错误分级退避重试（429 换 Key、5xx/断网指数退避）、双口径熔断（Key 级 / 端点级分开记账）、异构兜底端点（可切另一家服务商）；流式只在未吐 token 前重试防回复重复 | `server/llm.py`                |
+| 调用留痕防篡改：`llm_calls.jsonl` 每行带前一行 sha256 哈希链，`GET /api/logs/verify` 逐行校验改/删/换序                                                                        | `server/llm.py` `verify_chain` |
+| 鉴权与权限矩阵：PBKDF2 加盐、token 只存哈希、非 admin 越权 403、限频                                                                                                           | `server/auth.py`               |
+| **降级不降真**：DAG 规划失败 → 单 LLM 直出卡片（只跳拆解展示，绝不跳生成）；节点失败 → 标记后继续；工具失败/没搜到 → 如实告诉孩子"没查到"，不编造                              | 全链路                         |
 
 ## 六、大模型使用说明
 
@@ -218,6 +221,7 @@ node tests/test_panda3d.mjs
 # 服务启动后的端到端用例（真实打接口 + 真实 LLM）：
 .venv/bin/python tests/test_api.py --base http://localhost:8000
 ```
+
 `test_api.py` 覆盖：健康检查、登录/注册/找回、问候（含 SSE 流式）、闲聊流式、规划链全链路（plan→node→card）、
 记忆本与沉淀落盘、图谱（含家长视角过滤 + 时间轴切片）、事务详情/更新（POST/PATCH）、清单、家长收件箱、
 传话筒、日历导出、成长雷达、梦想、日志分页、双会话并发隔离与权限矩阵。
@@ -242,7 +246,7 @@ PandaButler 团队（西客松 · AI 软件赛道）
 
 <!-- 提交前补充：队长与成员姓名 / 分工（赛道细则要求每队指定 1 名队长，路演 PPT 的团队介绍同步使用） -->
 
-## Roadmap（路演话术）
+## Roadmap
 
 新形态与新业态详见 [`docs/新形态与新业态.md`](docs/新形态与新业态.md)（PWA ✅ · 通知落地 ✅ · 家长周报 ✅ · 童年备忘录 ✅ · IM 渠道/撮合/升学素材 🗺）。
 
