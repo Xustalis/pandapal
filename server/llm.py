@@ -566,6 +566,99 @@ async def _anthropic_request(client: httpx.AsyncClient, cand: _Cand, body: dict)
     )
 
 
+# ---------------------------------------------------------------- 思考链剥离
+# 推理型模型（MiniMax-M3 等）会把思考过程以 <think>…</think> 的形式内联在
+# content 里，而不是走 OpenAI 那套独立的 reasoning_content 字段。直接透传的话，
+# 孩子会在聊天气泡、管家晨报和熊猫气泡里看到一整段模型的内心戏。
+#
+# 非流式好办，整段正则删掉即可；流式不行——标签完全可能被切在两个分片之间
+# （"<thi" + "nk>…" 或 "…</thi" + "nk>"），逐片 replace 会漏掉半截标签，
+# 结果是屏幕上冒出 "<think>用户要求我…" 这种半截话。所以过滤器要跨分片保留尾巴。
+
+_THINK_OPEN = "<think>"
+_THINK_CLOSE = "</think>"
+_THINK_RE = re.compile(r"<think>.*?</think>\s*", re.S | re.I)
+
+
+def strip_think(text: str) -> str:
+    """整段文本里删掉 <think>…</think>（收尾缺失的残块也一并删）。"""
+    if not text or "<think>" not in text.lower():
+        return text or ""
+    cleaned = _THINK_RE.sub("", text)
+    # 模型有时被 max_tokens 截断在思考块中间，标签没闭上——这时剩下的全是内心戏
+    low = cleaned.lower()
+    if "<think>" in low:
+        cleaned = cleaned[:low.index("<think>")]
+    return cleaned.strip()
+
+
+def _ends_with_partial_tag(buf: str, tag: str) -> bool:
+    """buf 末尾是否是 tag 的真前缀（下一个分片才可能补全）。"""
+    return any(buf.endswith(tag[:n]) for n in range(1, len(tag)))
+
+
+class ThinkFilter:
+    """流式版的思考链过滤器：跨分片处理被切开的标签。"""
+
+    def __init__(self) -> None:
+        self._buf = ""
+        self._in_think = False
+        self._skip_ws = False   # 刚闭合思考块，紧跟的空白是排版噪声，丢掉
+
+    def feed(self, text: str) -> str:
+        """喂进一个分片，返回可以安全展示的部分。"""
+        if not text:
+            return ""
+        self._buf += text
+        out: list[str] = []
+        while True:
+            if self._in_think:
+                i = self._buf.lower().find(_THINK_CLOSE)
+                if i >= 0:
+                    self._buf = self._buf[i + len(_THINK_CLOSE):]
+                    self._in_think = False
+                    self._skip_ws = True
+                    continue
+                # 还没等到结束标签：只留着可能是半个结束标签的尾巴，其余丢弃
+                keep = len(_THINK_CLOSE) - 1
+                self._buf = self._buf[-keep:] if len(self._buf) > keep else self._buf
+                return "".join(out)
+            i = self._buf.lower().find(_THINK_OPEN)
+            if i >= 0:
+                out.append(self._buf[:i])
+                self._buf = self._buf[i + len(_THINK_OPEN):]
+                self._in_think = True
+                continue
+            if _ends_with_partial_tag(self._buf, _THINK_OPEN):
+                keep = len(_THINK_OPEN) - 1
+                if len(self._buf) > keep:
+                    out.append(self._buf[:-keep])
+                    self._buf = self._buf[-keep:]
+                return "".join(out)
+            piece, self._buf = self._buf, ""
+            if self._skip_ws:
+                piece = piece.lstrip()
+                if piece:
+                    self._skip_ws = False
+            out.append(piece)
+            return "".join(out)
+
+    def flush(self) -> str:
+        """流结束：把还欠着的正文放出来。
+
+        流到结尾仍停在思考块里（标签没闭合，通常是被 max_tokens 砍断）时，
+        剩下的全是内心戏，一并丢掉——否则孩子会看到"…砍断了"这种半截话。
+        """
+        rest, self._buf = self._buf, ""
+        was_in_think, self._in_think = self._in_think, False
+        if was_in_think:
+            return ""
+        if self._skip_ws:
+            rest = rest.lstrip()
+            self._skip_ws = False
+        return rest
+
+
 async def complete(
     messages: list[dict],
     *,
@@ -614,7 +707,7 @@ async def complete(
                         })
                         resp.raise_for_status()
                         data = resp.json()
-                        out = "".join(b.get("text", "") for b in data.get("content", []))
+                        out = strip_think("".join(b.get("text", "") for b in data.get("content", [])))
                         truncated = data.get("stop_reason") == "max_tokens"
                         usage = _usage_of(data, "anthropic") or usage
                         if out.strip():
@@ -642,7 +735,7 @@ async def complete(
                     resp.raise_for_status()
                     data = resp.json()
                     choice = data["choices"][0]
-                    out = choice["message"]["content"] or ""
+                    out = strip_think(choice["message"]["content"] or "")
                     truncated = choice.get("finish_reason") == "length"
                     usage = _usage_of(data, "openai") or usage
                     if out.strip():
@@ -711,9 +804,10 @@ async def stream(
         empty_tries = 0
         while True:
             at0 = time.monotonic()
-            got = False   # 本候选本尝试已产出过可见 token
+            got = False   # 本候选本尝试已产出过可见 token（已剥掉思考链的那种）
             finish = None
             usage = None
+            filt = ThinkFilter()   # 每个候选每次尝试都换新的：残留的半个标签不能带到下一轮
             try:
                 if cand.protocol == "anthropic":
                     system, rest = _split_system(messages)
@@ -765,7 +859,7 @@ async def stream(
                             continue
                         if cand.protocol == "anthropic":
                             if chunk.get("type") == "content_block_delta":
-                                text = chunk.get("delta", {}).get("text", "")
+                                text = filt.feed(chunk.get("delta", {}).get("text", ""))
                                 if text:
                                     got = True
                                     yield text
@@ -788,10 +882,14 @@ async def stream(
                             for choice in chunk.get("choices", []):
                                 if choice.get("finish_reason"):
                                     finish = choice["finish_reason"]
-                                text = choice.get("delta", {}).get("content") or ""
+                                text = filt.feed(choice.get("delta", {}).get("content") or "")
                                 if text:
                                     got = True
                                     yield text
+                    tail = filt.flush()   # 补上卡在缓冲区里的正文（标签恰好没被切开的那种）
+                    if tail:
+                        got = True
+                        yield tail
                 log_call(caller, got, (time.monotonic() - at0) * 1000,
                          "" if got else (f"流式响应为空（试了 {empty_tries} 次）"
                                          if empty_tries > 1 else "流式响应为空"),
